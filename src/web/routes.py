@@ -6,7 +6,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from database.db_manager import DatabaseManager
+from src.database.db_manager import DatabaseManager
 
 
 logger = logging.getLogger(__name__)
