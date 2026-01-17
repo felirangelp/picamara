@@ -198,24 +198,24 @@ class CameraServer:
                 
                 frame_count += 1
                 
-                # Reducir carga: procesar solo cada 2 frames (skip frames)
-                process_frame_count += 1
-                if process_frame_count % 2 != 0:
-                    # Actualizar frame sin procesar detección
-                    with self.frame_lock:
-                        self.current_frame = frame
-                    time.sleep(0.033)  # Sleep para reducir CPU
-                    continue
-                
                 # Detectar movimiento (con frame reducido para mejor rendimiento)
-                # Reducir resolución para detección (más rápido)
+                # Reducir resolución para detección (más rápido) - solo si es necesario
                 if frame.shape[0] > 720:
+                    # Reducir a 640x360 para detección más rápida
                     small_frame = cv2.resize(frame, (640, 360))
-                    motion_detected, annotated_frame = self.detector.detect(small_frame)
-                    # Escalar de vuelta
-                    annotated_frame = cv2.resize(annotated_frame, (frame.shape[1], frame.shape[0]))
+                    motion_detected, annotated_small = self.detector.detect(small_frame)
+                    # Escalar de vuelta al tamaño original
+                    annotated_frame = cv2.resize(annotated_small, (frame.shape[1], frame.shape[0]))
                 else:
                     motion_detected, annotated_frame = self.detector.detect(frame)
+                
+                # Reducir carga: procesar detección solo cada 2 frames
+                if frame_count % 2 != 0:
+                    # Actualizar frame sin anotaciones para mantener fluidez
+                    with self.frame_lock:
+                        self.current_frame = frame
+                    time.sleep(0.05)  # Sleep para reducir CPU
+                    continue
                 
                 # Actualizar frame actual (thread-safe)
                 with self.frame_lock:
