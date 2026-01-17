@@ -15,12 +15,15 @@ import sys
 import os
 from pathlib import Path
 
-# Agregar el directorio raíz del proyecto al PYTHONPATH
-# Esto permite que los imports absolutos con 'src.' funcionen
+# Obtener el directorio raíz del proyecto
 project_root = Path(__file__).parent.absolute()
 project_root_str = str(project_root)
 
-# Asegurar que el project_root esté al principio del path
+# Cambiar al directorio del proyecto (importante para imports relativos)
+os.chdir(project_root_str)
+
+# Agregar el directorio raíz del proyecto al PYTHONPATH
+# Esto permite que los imports absolutos con 'src.' funcionen
 if project_root_str not in sys.path:
     sys.path.insert(0, project_root_str)
 elif sys.path[0] != project_root_str:
