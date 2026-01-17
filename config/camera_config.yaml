@@ -6,10 +6,11 @@ camera:
   format: "RGB888"
 
 detection:
-  motion_threshold: 50  # Aumentado de 30 a 50 (menos sensible)
-  min_area: 1000  # Aumentado de 500 a 1000 (solo objetos más grandes)
-  blur_kernel: 7  # Aumentado para reducir ruido
-  background_update_rate: 0.05  # Reducido para actualizar fondo más lento
+  motion_threshold: 80  # Aumentado a 80 (mucho menos sensible)
+  min_area: 2500  # Aumentado a 2500 (solo objetos grandes)
+  blur_kernel: 9  # Aumentado para reducir más ruido
+  background_update_rate: 0.02  # Muy lento para estabilidad
+  consecutive_frames: 3  # Requiere 3 frames consecutivos con movimiento
 
 storage:
   save_path: "./data/videos"

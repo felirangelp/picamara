@@ -34,7 +34,8 @@ class MotionDetector:
         threshold: int = 30,
         min_area: int = 500,
         blur_kernel: int = 5,
-        background_update_rate: float = 0.1
+        background_update_rate: float = 0.1,
+        consecutive_frames: int = 1
     ) -> None:
         """Inicializa el detector de movimiento.
         
@@ -44,6 +45,7 @@ class MotionDetector:
             blur_kernel: Tamaño del kernel para blur (debe ser impar).
             background_update_rate: Tasa de actualización del fondo (0-1).
                 Valores más altos = fondo se actualiza más rápido.
+            consecutive_frames: Número de frames consecutivos con movimiento requeridos.
         """
         if blur_kernel % 2 == 0:
             blur_kernel += 1  # Asegurar que sea impar
@@ -53,12 +55,15 @@ class MotionDetector:
         self.min_area: int = min_area
         self.blur_kernel: int = blur_kernel
         self.background_update_rate: float = background_update_rate
+        self.consecutive_frames: int = consecutive_frames
         self.background: Optional[np.ndarray] = None
         self.background_set: bool = False
+        self.motion_frame_count: int = 0  # Contador de frames consecutivos con movimiento
         
         logger.info(
             f"MotionDetector inicializado: threshold={threshold}, "
-            f"min_area={min_area}, blur_kernel={blur_kernel}"
+            f"min_area={min_area}, blur_kernel={blur_kernel}, "
+            f"consecutive_frames={consecutive_frames}"
         )
     
     def set_background(self, frame: np.ndarray) -> None:
@@ -181,6 +186,7 @@ class MotionDetector:
         motion_detected = False
         
         # Procesar contornos
+        raw_motion_detected = False
         for contour in contours:
             area = cv2.contourArea(contour)
             
@@ -188,7 +194,7 @@ class MotionDetector:
             if area < self.min_area:
                 continue
             
-            motion_detected = True
+            raw_motion_detected = True
             
             # Obtener bounding box
             (x, y, w, h) = cv2.boundingRect(contour)
@@ -201,6 +207,19 @@ class MotionDetector:
                 (0, 255, 0),  # Verde en RGB
                 2
             )
+        
+        # Filtro de estabilización: requiere frames consecutivos
+        if raw_motion_detected:
+            self.motion_frame_count += 1
+            # Solo reportar movimiento si hay suficientes frames consecutivos
+            if self.motion_frame_count >= self.consecutive_frames:
+                motion_detected = True
+            else:
+                motion_detected = False
+        else:
+            # Resetear contador si no hay movimiento
+            self.motion_frame_count = 0
+            motion_detected = False
         
         # Actualizar fondo adaptativamente (solo si no hay movimiento)
         # para evitar que el objeto en movimiento se convierta en fondo
