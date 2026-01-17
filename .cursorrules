@@ -1,0 +1,48 @@
+# Cursor Rules - Agent Configuration
+
+## Referencias Principales
+
+Este proyecto sigue la metodología AI-DLC. Siempre consultar:
+
+1. **docs/inception/requirements.md**: Especificaciones formales del sistema
+2. **docs/construction/design.md**: Diseño técnico y arquitectura
+3. **docs/steering/ai-steering.md**: Reglas inmutables y estándares de código
+
+## Prioridades de Implementación
+
+1. Seguir estrictamente `.ai-steering.md` en todo el código
+2. Type hints obligatorios en todas las funciones
+3. Docstrings en formato Google para funciones públicas
+4. Manejo de errores robusto en todos los módulos
+5. Async/await para todas las operaciones I/O
+
+## Estructura del Proyecto
+
+- `src/camera/`: Manejo de cámara IMX219
+- `src/detection/`: Algoritmos de detección
+- `src/database/`: Gestión SQLite
+- `src/data/`: Integración LeRobotDataset
+- `src/web/`: FastAPI server y frontend
+- `src/alerts/`: Sistema de alertas
+
+## Tecnologías
+
+- Backend: FastAPI (NO Flask)
+- Cámara: picamera2
+- Visión: OpenCV
+- BD: SQLite
+- Frontend: Vanilla JavaScript (NO frameworks)
+
+## Testing
+
+- Cobertura mínima: 70%
+- Tests unitarios para cada módulo
+- Tests de integración para flujos completos
+
+## Cuando Generar Código
+
+1. Revisar docs/inception/requirements.md para requisitos
+2. Consultar docs/construction/design.md para arquitectura
+3. Seguir docs/steering/ai-steering.md para estándares
+4. Implementar con type hints y docstrings
+5. Incluir manejo de errores completo

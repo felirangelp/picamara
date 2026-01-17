@@ -1,0 +1,38 @@
+# Core dependencies
+numpy>=1.24.0,<2.0.0
+opencv-python>=4.8.0,<5.0.0
+Pillow>=10.0.0,<11.0.0
+
+# Camera (solo disponible en Raspberry Pi)
+# Instalar manualmente en Raspberry Pi: sudo apt install python3-picamera2
+# picamera2>=0.3.12
+
+# Web Framework
+fastapi>=0.100.0,<1.0.0
+uvicorn[standard]>=0.23.0,<1.0.0
+python-multipart>=0.0.6
+
+# LeRobot (opcional para fase 1 - instalar por separado si se necesita)
+# Para instalar: pip install lerobot huggingface-hub
+# lerobot>=0.4.0,<1.0.0
+# huggingface-hub>=0.19.0
+
+# ML (para fases futuras - opcional, muy pesado)
+# torch>=2.0.0
+# torchvision>=0.15.0
+# transformers>=4.35.0
+
+# Configuration
+pyyaml>=6.0,<7.0.0
+python-dotenv>=1.0.0,<2.0.0
+pydantic>=2.0.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+jinja2>=3.0.0
+
+# Utilities
+aiofiles>=23.0.0
+
+# Testing (opcional, para desarrollo)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0

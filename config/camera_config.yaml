@@ -1,0 +1,26 @@
+camera:
+  resolution:
+    width: 1920
+    height: 1080
+  framerate: 30
+  format: "RGB888"
+
+detection:
+  motion_threshold: 30
+  min_area: 500
+  blur_kernel: 5
+  background_update_rate: 0.1
+
+storage:
+  save_path: "./data/videos"
+  episode_path: "./data/episodes"
+  save_on_motion: true
+  max_episode_duration: 300  # segundos
+
+database:
+  db_path: "./data/database.db"
+
+web:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Camera Security System</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎥 Pi Camera Security System</h1>
+            <div class="status-indicator" id="status-indicator">
+                <span class="status-dot" id="status-dot"></span>
+                <span id="status-text">Conectando...</span>
+            </div>
+        </header>
+
+        <main>
+            <section class="video-section">
+                <div class="video-container">
+                    <img src="/video_feed" alt="Camera Stream" id="video-stream">
+                </div>
+            </section>
+
+            <section class="info-panel">
+                <div class="info-card">
+                    <h3>Estado del Sistema</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Movimiento:</label>
+                            <span id="motion-status" class="motion-calm">Calmado</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Detecciones:</label>
+                            <span id="motion-count">0</span>
+                        </div>
+                        <div class="info-item">
+                            <label>FPS:</label>
+                            <span id="fps">0</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Uptime:</label>
+                            <span id="uptime">0s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Episodios Recientes</h3>
+                    <div id="episodes-list" class="episodes-list">
+                        <p class="loading">Cargando...</p>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>Configuración</h3>
+                    <form id="config-form" class="config-form">
+                        <div class="form-group">
+                            <label for="motion-threshold">Umbral de Movimiento:</label>
+                            <input type="number" id="motion-threshold" name="motion_threshold" min="0" max="255" value="30">
+                        </div>
+                        <div class="form-group">
+                            <label for="min-area">Área Mínima:</label>
+                            <input type="number" id="min-area" name="min_area" min="0" value="500">
+                        </div>
+                        <button type="submit" class="btn-primary">Actualizar Configuración</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
