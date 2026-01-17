@@ -252,19 +252,26 @@ class CameraServer:
                             system_status["motion_count"] += 1
                     else:
                         motion_active_frames = 0
-                        if self.episode_active and motion_active_frames == 0:
-                            # Esperar 2 segundos antes de cerrar episodio (evitar cierres prematuros)
-                            if time.time() - self.episode_start_time > 2:
-                                # Verificar que realmente no hay movimiento
-                                check_frame = self.camera.capture_frame()
-                                if check_frame is not None:
-                                    try:
-                                        check_motion, _ = self.detector.detect(check_frame)
-                                        if not check_motion:
-                                            # Cerrar episodio
-                                            self._close_episode()
-                                    except Exception as e:
-                                        logger.error(f"Error verificando movimiento: {e}")
+                        if self.episode_active:
+                            # Esperar más tiempo (5 segundos) antes de cerrar episodio
+                            # Esto evita cierres prematuros y reduce falsos positivos
+                            if time.time() - self.episode_start_time > 5:
+                                # Verificar múltiples veces que realmente no hay movimiento
+                                motion_checks = 0
+                                for _ in range(3):  # Verificar 3 veces
+                                    check_frame = self.camera.capture_frame()
+                                    if check_frame is not None:
+                                        try:
+                                            check_motion, _ = self.detector.detect(check_frame)
+                                            if not check_motion:
+                                                motion_checks += 1
+                                            time.sleep(0.5)  # Esperar entre verificaciones
+                                        except Exception as e:
+                                            logger.error(f"Error verificando movimiento: {e}")
+                                
+                                # Solo cerrar si las 3 verificaciones no detectan movimiento
+                                if motion_checks >= 3:
+                                    self._close_episode()
                     
                     # Añadir frame al episodio solo cada 5 frames para reducir memoria
                     if self.episode_active and self.recorder and frame_count % 5 == 0:
