@@ -184,6 +184,7 @@ class CameraServer:
             frame_count = 0
             last_fps_time = time.time()
             motion_active_frames = 0
+            process_frame_count = 0  # Contador para skip frames
             
             # Loop principal
             while self.is_running:
@@ -195,20 +196,26 @@ class CameraServer:
                     time.sleep(0.1)
                     continue
                 
-                # Reducir carga: procesar solo cada 2 frames (skip frames)
                 frame_count += 1
-                if frame_count % 2 != 0:
+                
+                # Reducir carga: procesar solo cada 2 frames (skip frames)
+                process_frame_count += 1
+                if process_frame_count % 2 != 0:
+                    # Actualizar frame sin procesar detección
+                    with self.frame_lock:
+                        self.current_frame = frame
                     time.sleep(0.033)  # Sleep para reducir CPU
                     continue
                 
                 # Detectar movimiento (con frame reducido para mejor rendimiento)
                 # Reducir resolución para detección (más rápido)
-                small_frame = cv2.resize(frame, (640, 360)) if frame.shape[0] > 720 else frame
-                motion_detected, annotated_frame = self.detector.detect(small_frame)
-                
-                # Escalar de vuelta si es necesario
-                if annotated_frame.shape != frame.shape:
+                if frame.shape[0] > 720:
+                    small_frame = cv2.resize(frame, (640, 360))
+                    motion_detected, annotated_frame = self.detector.detect(small_frame)
+                    # Escalar de vuelta
                     annotated_frame = cv2.resize(annotated_frame, (frame.shape[1], frame.shape[0]))
+                else:
+                    motion_detected, annotated_frame = self.detector.detect(frame)
                 
                 # Actualizar frame actual (thread-safe)
                 with self.frame_lock:
