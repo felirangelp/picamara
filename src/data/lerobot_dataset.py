@@ -90,6 +90,13 @@ class EpisodeRecorder:
             logger.warning("No hay episodio activo, iniciando uno nuevo")
             self.start_episode()
         
+        # Limitar tamaño de episodio para evitar problemas de memoria
+        MAX_EPISODIE_FRAMES = 300  # ~10 segundos a 30 FPS
+        if len(self.current_episode) >= MAX_EPISODIE_FRAMES:
+            logger.warning(f"Episodio alcanzó límite de {MAX_EPISODIE_FRAMES} frames, guardando...")
+            self.save_episode()
+            self.start_episode()
+        
         frame_data: Dict[str, Any] = {
             "frame_index": len(self.current_episode),
             "timestamp": datetime.now().isoformat(),

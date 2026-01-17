@@ -199,19 +199,26 @@ class CameraServer:
                 
                 # Reducir carga: procesar detección solo cada 2 frames
                 if frame_count % 2 == 0:
-                    # Detectar movimiento (con frame reducido para mejor rendimiento)
-                    if frame.shape[0] > 720:
-                        # Reducir a 640x360 para detección más rápida
-                        small_frame = cv2.resize(frame, (640, 360))
-                        motion_detected, annotated_small = self.detector.detect(small_frame)
-                        # Escalar de vuelta al tamaño original
-                        annotated_frame = cv2.resize(annotated_small, (frame.shape[1], frame.shape[0]))
-                    else:
-                        motion_detected, annotated_frame = self.detector.detect(frame)
-                    
-                    # Actualizar frame actual (thread-safe)
-                    with self.frame_lock:
-                        self.current_frame = annotated_frame
+                    try:
+                        # Detectar movimiento (con frame reducido para mejor rendimiento)
+                        if frame.shape[0] > 720:
+                            # Reducir a 640x360 para detección más rápida
+                            small_frame = cv2.resize(frame, (640, 360))
+                            motion_detected, annotated_small = self.detector.detect(small_frame)
+                            # Escalar de vuelta al tamaño original
+                            annotated_frame = cv2.resize(annotated_small, (frame.shape[1], frame.shape[0]))
+                        else:
+                            motion_detected, annotated_frame = self.detector.detect(frame)
+                        
+                        # Actualizar frame actual (thread-safe)
+                        with self.frame_lock:
+                            self.current_frame = annotated_frame
+                    except Exception as e:
+                        logger.error(f"Error en detección: {e}", exc_info=True)
+                        # En caso de error, usar frame sin procesar
+                        with self.frame_lock:
+                            self.current_frame = frame
+                        motion_detected = False
                 else:
                     # Frame sin procesar - solo actualizar para mantener fluidez
                     with self.frame_lock:
@@ -224,52 +231,65 @@ class CameraServer:
                 system_status["motion_detected"] = motion_detected
                 
                 # Manejar episodios
-                if motion_detected:
-                    motion_active_frames += 1
-                    if not self.episode_active:
-                        # Iniciar nuevo episodio
-                        self.episode_id = self.recorder.start_episode()
-                        self.episode_start_time = time.time()
-                        self.episode_active = True
-                        
-                        # Registrar en BD
-                        self.episode_db_id = self.db_manager.add_episode(
-                            episode_id=self.episode_id,
-                            file_path=f"{self.recorder.episode_path}/{self.episode_id}",
-                            start_time=datetime.fromtimestamp(self.episode_start_time),
-                            motion_detected=True
-                        )
-                        
-                        self.notifier.episode_started(self.episode_id, self.episode_db_id)
-                        system_status["motion_count"] += 1
-                else:
-                    motion_active_frames = 0
-                    if self.episode_active:
-                        # Esperar un poco antes de cerrar episodio
-                        time.sleep(1)
-                        # Verificar que realmente no hay movimiento
-                        check_frame = self.camera.capture_frame()
-                        if check_frame is not None:
-                            check_motion, _ = self.detector.detect(check_frame)
-                            if not check_motion:
-                                # Cerrar episodio
-                                self._close_episode()
+                try:
+                    if motion_detected:
+                        motion_active_frames += 1
+                        if not self.episode_active:
+                            # Iniciar nuevo episodio
+                            self.episode_id = self.recorder.start_episode()
+                            self.episode_start_time = time.time()
+                            self.episode_active = True
+                            
+                            # Registrar en BD
+                            self.episode_db_id = self.db_manager.add_episode(
+                                episode_id=self.episode_id,
+                                file_path=f"{self.recorder.episode_path}/{self.episode_id}",
+                                start_time=datetime.fromtimestamp(self.episode_start_time),
+                                motion_detected=True
+                            )
+                            
+                            self.notifier.episode_started(self.episode_id, self.episode_db_id)
+                            system_status["motion_count"] += 1
+                    else:
+                        motion_active_frames = 0
+                        if self.episode_active and motion_active_frames == 0:
+                            # Esperar 2 segundos antes de cerrar episodio (evitar cierres prematuros)
+                            if time.time() - self.episode_start_time > 2:
+                                # Verificar que realmente no hay movimiento
+                                check_frame = self.camera.capture_frame()
+                                if check_frame is not None:
+                                    try:
+                                        check_motion, _ = self.detector.detect(check_frame)
+                                        if not check_motion:
+                                            # Cerrar episodio
+                                            self._close_episode()
+                                    except Exception as e:
+                                        logger.error(f"Error verificando movimiento: {e}")
+                    
+                    # Añadir frame al episodio solo cada 5 frames para reducir memoria
+                    if self.episode_active and self.recorder and frame_count % 5 == 0:
+                        try:
+                            # Reducir resolución del frame antes de guardar
+                            small_frame = cv2.resize(frame, (640, 360)) if frame.shape[0] > 720 else frame
+                            self.recorder.add_frame(small_frame, {"motion": motion_detected})
+                        except Exception as e:
+                            logger.error(f"Error añadiendo frame al episodio: {e}")
+                except Exception as e:
+                    logger.error(f"Error manejando episodios: {e}", exc_info=True)
                 
-                # Añadir frame al episodio si está activo
-                if self.episode_active and self.recorder:
-                    self.recorder.add_frame(frame, {"motion": motion_detected})
-                
-                # Calcular FPS
-                frame_count += 1
+                # Calcular FPS cada 30 frames
                 if frame_count % 30 == 0:
-                    elapsed = time.time() - last_fps_time
-                    fps = 30 / elapsed if elapsed > 0 else 0
-                    system_status["fps"] = fps
-                    last_fps_time = time.time()
+                    try:
+                        elapsed = time.time() - last_fps_time
+                        fps = 30 / elapsed if elapsed > 0 else 0
+                        system_status["fps"] = fps
+                        last_fps_time = time.time()
+                    except Exception as e:
+                        logger.error(f"Error calculando FPS: {e}")
                 
-                # Control de framerate
+                # Control de framerate - ajustado para 15 FPS
                 frame_time = time.time() - frame_start
-                sleep_time = max(0, 0.033 - frame_time)  # ~30 FPS
+                sleep_time = max(0, 0.067 - frame_time)  # ~15 FPS
                 time.sleep(sleep_time)
         
         except Exception as e:
