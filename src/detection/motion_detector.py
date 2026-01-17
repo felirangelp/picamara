@@ -171,8 +171,11 @@ class MotionDetector:
             cv2.THRESH_BINARY
         )
         
-        # Dilatación para conectar áreas cercanas
-        thresh = cv2.dilate(thresh, None, iterations=2)
+        # Erosión primero para eliminar ruido pequeño
+        thresh = cv2.erode(thresh, None, iterations=2)
+        
+        # Dilatación para conectar áreas cercanas (menos iteraciones)
+        thresh = cv2.dilate(thresh, None, iterations=1)
         
         # Encontrar contornos
         contours, _ = cv2.findContours(
