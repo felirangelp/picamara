@@ -167,13 +167,15 @@ function setupVideoStreamReconnect() {
 // Iniciar actualizaciones de estado
 function startStatusUpdates() {
     updateStatus(); // Actualizar inmediatamente
-    statusUpdateInterval = setInterval(updateStatus, 1000); // Cada segundo
+    // Reducir frecuencia para mejor rendimiento en Raspberry Pi
+    statusUpdateInterval = setInterval(updateStatus, 3000); // Cada 3 segundos
 }
 
 // Iniciar actualizaciones de episodios
 function startEpisodesUpdates() {
     updateEpisodes(); // Actualizar inmediatamente
-    episodesUpdateInterval = setInterval(updateEpisodes, 5000); // Cada 5 segundos
+    // Reducir frecuencia para mejor rendimiento
+    episodesUpdateInterval = setInterval(updateEpisodes, 10000); // Cada 10 segundos
 }
 
 // Limpiar intervalos al salir

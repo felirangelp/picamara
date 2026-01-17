@@ -124,14 +124,16 @@ class CameraServer:
                 # Convertir RGB a BGR para OpenCV
                 frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 
-                # Codificar como JPEG
-                ret, buffer = cv2.imencode('.jpg', frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                # Codificar como JPEG con calidad optimizada para Raspberry Pi
+                # Calidad 70 es un buen balance entre calidad y tamaño
+                ret, buffer = cv2.imencode('.jpg', frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 if ret:
                     frame_bytes = buffer.tobytes()
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
             
-            await asyncio.sleep(0.033)  # ~30 FPS
+            # Reducir FPS a 15 para mejor rendimiento en Raspberry Pi
+            await asyncio.sleep(0.067)  # ~15 FPS (mejor para Pi)
     
     def _camera_thread_func(self) -> None:
         """Thread que captura frames y detecta movimiento."""
