@@ -263,25 +263,23 @@ ssh picamara@192.168.1.50 'pkill -f run.py && cd ~/Pi_camara && nohup ./venv/bin
 
 ---
 
-## 📊 Resumen: ¿Replantear la Estrategia?
+## 📊 Resumen: Estrategia Implementada
 
-### **NO es necesario replantear** ✅
+### **Estrategia Final: Git como Fuente de Verdad** ✅
 
-La estrategia actual es **correcta y escalable** porque:
+La estrategia implementada es **óptima y escalable** porque:
 
 1. ✅ **Separación clara** entre desarrollo y producción
-2. ✅ **Sincronización controlada** con rsync
-3. ✅ **Datos locales** donde deben estar
-4. ✅ **Independencia** de ambientes
+2. ✅ **Sincronización automática** con Git/GitHub
+3. ✅ **Datos locales** donde deben estar (no se versionan)
+4. ✅ **Independencia** de ambientes (cada uno tiene su venv)
+5. ✅ **Versionado completo** con historial de cambios
+6. ✅ **Backup automático** en GitHub
 
-### **Mejora Opcional**: Agregar Git
-
-Si quieres mejorar aún más, agrega Git para:
-- Versionado de código
-- Historial de cambios
-- Facilidad de rollback
-
-Pero la arquitectura actual **funciona perfectamente** para un proyecto de esta escala.
+### **Repositorio GitHub**
+- URL: https://github.com/felirangelp/picamara.git
+- Branch principal: `main`
+- Scripts de sincronización: `scripts/sync_*.sh`
 
 ---
 
