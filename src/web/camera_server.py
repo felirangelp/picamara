@@ -14,12 +14,12 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from camera.imx219_handler import IMX219Handler
-from detection.motion_detector import MotionDetector
-from database.db_manager import DatabaseManager
-from data.lerobot_dataset import EpisodeRecorder
-from alerts.notification import NotificationManager
-from web.routes import router, system_status
+from src.camera.imx219_handler import IMX219Handler
+from src.detection.motion_detector import MotionDetector
+from src.database.db_manager import DatabaseManager
+from src.data.lerobot_dataset import EpisodeRecorder
+from src.alerts.notification import NotificationManager
+from src.web.routes import router, system_status
 
 
 logger = logging.getLogger(__name__)

@@ -11,7 +11,7 @@ Siguiendo los principios de AI-DLC:
 
 # IMPORTANTE: Configurar el entorno ANTES de cualquier otro import
 # Esto permite acceso a picamera2 y libcamera del sistema
-from config_env import configure_system_paths, verify_system_dependencies, print_system_info
+from src.config_env import configure_system_paths, verify_system_dependencies, print_system_info
 configure_system_paths()
 
 import argparse
@@ -20,7 +20,7 @@ import signal
 import sys
 from pathlib import Path
 
-from web.camera_server import CameraServer
+from src.web.camera_server import CameraServer
 
 
 # Configurar logging
