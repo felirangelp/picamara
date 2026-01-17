@@ -1,8 +1,8 @@
 camera:
   resolution:
-    width: 1920
-    height: 1080
-  framerate: 30
+    width: 1280
+    height: 720
+  framerate: 15
   format: "RGB888"
 
 detection:

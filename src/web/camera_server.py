@@ -132,8 +132,8 @@ class CameraServer:
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
             
-            # Reducir FPS a 15 para mejor rendimiento en Raspberry Pi
-            await asyncio.sleep(0.067)  # ~15 FPS (mejor para Pi)
+            # Reducir FPS a 10 para mejor rendimiento en Raspberry Pi
+            await asyncio.sleep(0.1)  # ~10 FPS (óptimo para Pi)
     
     def _camera_thread_func(self) -> None:
         """Thread que captura frames y detecta movimiento."""
@@ -195,8 +195,20 @@ class CameraServer:
                     time.sleep(0.1)
                     continue
                 
-                # Detectar movimiento
-                motion_detected, annotated_frame = self.detector.detect(frame)
+                # Reducir carga: procesar solo cada 2 frames (skip frames)
+                frame_count += 1
+                if frame_count % 2 != 0:
+                    time.sleep(0.033)  # Sleep para reducir CPU
+                    continue
+                
+                # Detectar movimiento (con frame reducido para mejor rendimiento)
+                # Reducir resolución para detección (más rápido)
+                small_frame = cv2.resize(frame, (640, 360)) if frame.shape[0] > 720 else frame
+                motion_detected, annotated_frame = self.detector.detect(small_frame)
+                
+                # Escalar de vuelta si es necesario
+                if annotated_frame.shape != frame.shape:
+                    annotated_frame = cv2.resize(annotated_frame, (frame.shape[1], frame.shape[0]))
                 
                 # Actualizar frame actual (thread-safe)
                 with self.frame_lock:
