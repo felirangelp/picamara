@@ -184,7 +184,6 @@ class CameraServer:
             frame_count = 0
             last_fps_time = time.time()
             motion_active_frames = 0
-            process_frame_count = 0  # Contador para skip frames
             
             # Loop principal
             while self.is_running:
@@ -198,28 +197,28 @@ class CameraServer:
                 
                 frame_count += 1
                 
-                # Detectar movimiento (con frame reducido para mejor rendimiento)
-                # Reducir resolución para detección (más rápido) - solo si es necesario
-                if frame.shape[0] > 720:
-                    # Reducir a 640x360 para detección más rápida
-                    small_frame = cv2.resize(frame, (640, 360))
-                    motion_detected, annotated_small = self.detector.detect(small_frame)
-                    # Escalar de vuelta al tamaño original
-                    annotated_frame = cv2.resize(annotated_small, (frame.shape[1], frame.shape[0]))
-                else:
-                    motion_detected, annotated_frame = self.detector.detect(frame)
-                
                 # Reducir carga: procesar detección solo cada 2 frames
-                if frame_count % 2 != 0:
-                    # Actualizar frame sin anotaciones para mantener fluidez
+                if frame_count % 2 == 0:
+                    # Detectar movimiento (con frame reducido para mejor rendimiento)
+                    if frame.shape[0] > 720:
+                        # Reducir a 640x360 para detección más rápida
+                        small_frame = cv2.resize(frame, (640, 360))
+                        motion_detected, annotated_small = self.detector.detect(small_frame)
+                        # Escalar de vuelta al tamaño original
+                        annotated_frame = cv2.resize(annotated_small, (frame.shape[1], frame.shape[0]))
+                    else:
+                        motion_detected, annotated_frame = self.detector.detect(frame)
+                    
+                    # Actualizar frame actual (thread-safe)
+                    with self.frame_lock:
+                        self.current_frame = annotated_frame
+                else:
+                    # Frame sin procesar - solo actualizar para mantener fluidez
                     with self.frame_lock:
                         self.current_frame = frame
+                    motion_detected = False  # Mantener estado anterior
                     time.sleep(0.05)  # Sleep para reducir CPU
                     continue
-                
-                # Actualizar frame actual (thread-safe)
-                with self.frame_lock:
-                    self.current_frame = annotated_frame
                 
                 # Actualizar estado
                 system_status["motion_detected"] = motion_detected
