@@ -122,13 +122,13 @@ Este proyecto sigue una arquitectura **"Desarrollo Local - Deployment Remoto"** 
 
 ## 🔧 Mejoras Sugeridas (Opcionales)
 
-### Opción A: Git como Fuente de Verdad (Recomendado)
+### ✅ Estrategia Implementada: Git como Fuente de Verdad
 
-**Estrategia mejorada:**
+**Estrategia actual:**
 ```
 MacBook Pro (desarrollo)
     ↓ git push
-Repositorio Git (GitHub/GitLab)
+GitHub (https://github.com/felirangelp/picamara.git)
     ↓ git pull
 Raspberry Pi (producción)
 ```
@@ -137,21 +137,25 @@ Raspberry Pi (producción)
 - ✅ Versionado de código
 - ✅ Historial de cambios
 - ✅ Rollback fácil
-- ✅ Colaboración
+- ✅ Backup automático en la nube
+- ✅ Sincronización automática
+
+**Scripts disponibles:**
+- `scripts/sync_to_github.sh` - Sincronizar desde MacBook
+- `scripts/sync_from_github_pi.sh` - Actualizar Pi desde GitHub
 
 **Implementación:**
 ```bash
 # En MacBook Pro
-git add .
-git commit -m "Cambios"
-git push
+./scripts/sync_to_github.sh
 
-# En Raspberry Pi
-cd ~/Pi_camara
-git pull
+# Actualizar en Raspberry Pi
+./scripts/sync_from_github_pi.sh 192.168.1.50 picamara picamara
 ```
 
-### Opción B: Mantener rsync (Actual)
+Ver documentación completa: `scripts/workflow.md`
+
+### Opción Alternativa: Mantener rsync (Deprecada)
 
 **Ventajas:**
 - ✅ Simple y directo
