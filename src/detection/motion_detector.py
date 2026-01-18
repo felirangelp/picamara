@@ -201,19 +201,36 @@ class MotionDetector:
         )
         
         # Verificar que el fondo esté inicializado y tenga el mismo tamaño
-        if self.background is None or self.background.size == 0:
-            # Fondo no inicializado, establecerlo ahora
-            self.set_background(frame)
-            return False, frame.copy()
-        
-        # Verificar que el fondo tenga el mismo tamaño que el frame procesado
-        if self.background.shape != gray_blurred.shape:
-            # Tamaños diferentes, recalibrar fondo
+        try:
+            if self.background is None:
+                # Fondo no inicializado, establecerlo ahora
+                self.set_background(frame)
+                return False, frame.copy()
+            
+            # Verificar que el fondo no esté vacío
+            if not hasattr(self.background, 'size') or self.background.size == 0:
+                self.set_background(frame)
+                return False, frame.copy()
+            
+            # Verificar que el fondo tenga el mismo tamaño que el frame procesado
+            if self.background.shape != gray_blurred.shape:
+                # Tamaños diferentes, recalibrar fondo
+                self.set_background(frame)
+                return False, frame.copy()
+        except (AttributeError, ValueError) as e:
+            # Error al acceder al fondo, recalibrar
+            logger.warning(f"Error validando fondo, recalibrando: {e}")
             self.set_background(frame)
             return False, frame.copy()
         
         # Calcular diferencia absoluta con el fondo
-        frame_delta = cv2.absdiff(self.background, gray_blurred)
+        try:
+            frame_delta = cv2.absdiff(self.background, gray_blurred)
+        except cv2.error as e:
+            # Error en absdiff, probablemente tamaños incompatibles
+            logger.warning(f"Error en absdiff, recalibrando fondo: {e}")
+            self.set_background(frame)
+            return False, frame.copy()
         
         # Aplicar threshold para binarizar
         _, thresh = cv2.threshold(
