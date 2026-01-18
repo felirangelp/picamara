@@ -283,6 +283,7 @@ class MotionDetector:
         """Resetea el fondo, forzando recalibración en el próximo frame."""
         self.background = None
         self.background_set = False
+        self.motion_frame_count = 0  # Resetear también el contador de frames consecutivos
         logger.info("Fondo reseteado")
     
     def update_config(

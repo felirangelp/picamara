@@ -188,6 +188,7 @@ class CameraServer:
             motion_active_frames = 0
             last_motion_time: Optional[float] = None  # Tiempo desde que dejó de haber movimiento
             last_motion_detected = False  # Estado anterior de movimiento
+            frames_without_motion = 0  # Contador de frames consecutivos sin movimiento
             
             # Loop principal
             while self.is_running:
@@ -235,6 +236,18 @@ class CameraServer:
                 # Guardar estado actual para siguiente iteración
                 last_motion_detected = motion_detected
                 
+                # Contar frames consecutivos sin movimiento
+                if not motion_detected:
+                    frames_without_motion += 1
+                else:
+                    frames_without_motion = 0
+                
+                # Forzar estado a False si hay muchos frames consecutivos sin movimiento
+                # Esto previene que falsos positivos ocasionales mantengan el estado en True
+                if frames_without_motion >= 10:  # ~0.6 segundos a 15 FPS
+                    motion_detected = False
+                    system_status["motion_detected"] = False
+                
                 # Actualizar estado del sistema
                 system_status["motion_detected"] = motion_detected
                 
@@ -242,8 +255,9 @@ class CameraServer:
                 try:
                     if motion_detected:
                         motion_active_frames += 1
-                        # Resetear contador de tiempo sin movimiento
+                        # Resetear contadores de tiempo sin movimiento
                         last_motion_time = None
+                        frames_without_motion = 0
                         
                         if not self.episode_active:
                             # Iniciar nuevo episodio
@@ -294,11 +308,13 @@ class CameraServer:
                                             # No hay movimiento confirmado, cerrar episodio
                                             self._close_episode()
                                             last_motion_time = None  # Resetear contador
+                                            frames_without_motion = 0
                                             # Asegurar que el estado se actualice a False
                                             system_status["motion_detected"] = False
                                         else:
                                             # Aún hay movimiento, resetear contador
                                             last_motion_time = current_time
+                                            frames_without_motion = 0
                                             system_status["motion_detected"] = True
                                     except Exception as e:
                                         logger.error(f"Error verificando movimiento: {e}")
@@ -308,6 +324,7 @@ class CameraServer:
                             # No hay episodio activo y no hay movimiento - asegurar estado calmado
                             if system_status.get("motion_detected", False):
                                 system_status["motion_detected"] = False
+                                frames_without_motion = 0
                     
                     # Añadir frame al episodio solo cada 5 frames para reducir memoria
                     if self.episode_active and self.recorder and frame_count % 5 == 0:
