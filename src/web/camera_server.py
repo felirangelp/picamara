@@ -285,11 +285,10 @@ class CameraServer:
                         last_motion_time = None
                         frames_without_motion = 0
                         # Forzar reset del fondo del detector para que se recalibre
-                        try:
-                            self.detector.reset_background()
-                            logger.info("Fondo del detector reseteado forzadamente")
-                        except Exception as e:
-                            logger.error(f"Error reseteando fondo: {e}")
+                        # IMPORTANTE: No resetear aquí porque causa errores de OpenCV
+                        # El reset se hará automáticamente cuando el detector detecte
+                        # que el fondo es None o tiene tamaño incorrecto
+                        logger.info("Fondo del detector será recalibrado en el próximo frame")
                 else:
                     # Actualizar estado del sistema solo si no estamos forzando a False
                     # Pero solo actualizar si realmente procesamos el frame

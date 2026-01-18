@@ -200,6 +200,18 @@ class MotionDetector:
             0
         )
         
+        # Verificar que el fondo esté inicializado y tenga el mismo tamaño
+        if self.background is None or self.background.size == 0:
+            # Fondo no inicializado, establecerlo ahora
+            self.set_background(frame)
+            return False, frame.copy()
+        
+        # Verificar que el fondo tenga el mismo tamaño que el frame procesado
+        if self.background.shape != gray_blurred.shape:
+            # Tamaños diferentes, recalibrar fondo
+            self.set_background(frame)
+            return False, frame.copy()
+        
         # Calcular diferencia absoluta con el fondo
         frame_delta = cv2.absdiff(self.background, gray_blurred)
         
