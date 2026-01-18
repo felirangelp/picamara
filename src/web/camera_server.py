@@ -277,15 +277,15 @@ class CameraServer:
                 if frames_without_motion >= 5:  # ~0.3 segundos
                     force_calm = True
                 
-                # CRÍTICO: Si NO hay episodio activo, IGNORAR completamente el detector
-                # Solo confiar en el detector cuando hay un episodio activo (movimiento confirmado)
+                # CRÍTICO: Si NO hay episodio activo, usar el detector para DETECTAR movimiento
+                # pero mantener el estado en False hasta confirmar con suficientes frames
+                # Esto previene que falsos positivos cambien el estado inmediatamente
                 if not self.episode_active:
-                    # Sin episodio activo = forzar estado a False siempre
-                    motion_detected = False
-                    system_status["motion_detected"] = False
-                    # Resetear contadores
-                    frames_without_motion = 0
-                    frames_with_motion_after_grace = 0
+                    # El detector se usa para detectar movimiento, pero el estado se mantiene en False
+                    # hasta que se confirme con suficientes frames consecutivos
+                    # NO forzar motion_detected = False aquí, permitir que el detector detecte
+                    # pero el estado del sistema se mantiene en False hasta confirmación
+                    system_status["motion_detected"] = False  # Estado siempre False sin episodio activo
                 
                 if force_calm:
                     # Forzar estado a False y mantenerlo así, IGNORANDO lo que dice el detector
