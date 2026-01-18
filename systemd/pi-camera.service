@@ -4,14 +4,14 @@ After=network.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/Pi_camara
-Environment="PATH=/home/pi/Pi_camara/venv/bin"
-ExecStart=/home/pi/Pi_camara/venv/bin/python src/main.py
+User=picamara
+WorkingDirectory=/home/picamara/Pi_camara
+Environment="PATH=/home/picamara/Pi_camara/venv/bin"
+ExecStart=/home/picamara/Pi_camara/venv/bin/python run.py
 Restart=always
 RestartSec=10
-StandardOutput=journal
-StandardError=journal
+StandardOutput=append:/home/picamara/Pi_camara/logs/server.log
+StandardError=append:/home/picamara/Pi_camara/logs/server.log
 
 [Install]
 WantedBy=multi-user.target
