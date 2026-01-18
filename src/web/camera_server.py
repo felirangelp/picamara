@@ -187,6 +187,7 @@ class CameraServer:
             last_fps_time = time.time()
             motion_active_frames = 0
             last_motion_time: Optional[float] = None  # Tiempo desde que dejó de haber movimiento
+            last_motion_detected = False  # Estado anterior de movimiento
             
             # Loop principal
             while self.is_running:
@@ -223,14 +224,18 @@ class CameraServer:
                             self.current_frame = frame
                         motion_detected = False
                 else:
+                    # Frame sin procesar - usar estado anterior
+                    motion_detected = last_motion_detected
                     # Frame sin procesar - solo actualizar para mantener fluidez
                     with self.frame_lock:
                         self.current_frame = frame
-                    motion_detected = False  # Mantener estado anterior
                     time.sleep(0.05)  # Sleep para reducir CPU
-                    continue
+                    # NO hacer continue aquí - necesitamos procesar la lógica de episodios
                 
-                # Actualizar estado
+                # Guardar estado actual para siguiente iteración
+                last_motion_detected = motion_detected
+                
+                # Actualizar estado del sistema
                 system_status["motion_detected"] = motion_detected
                 
                 # Manejar episodios
@@ -278,18 +283,31 @@ class CameraServer:
                                 check_frame = self.camera.capture_frame()
                                 if check_frame is not None:
                                     try:
-                                        check_motion, _ = self.detector.detect(check_frame)
+                                        # Reducir frame para verificación rápida
+                                        if check_frame.shape[0] > 720:
+                                            check_small = cv2.resize(check_frame, (640, 360))
+                                            check_motion, _ = self.detector.detect(check_small)
+                                        else:
+                                            check_motion, _ = self.detector.detect(check_frame)
+                                        
                                         if not check_motion:
                                             # No hay movimiento confirmado, cerrar episodio
                                             self._close_episode()
                                             last_motion_time = None  # Resetear contador
+                                            # Asegurar que el estado se actualice a False
+                                            system_status["motion_detected"] = False
                                         else:
                                             # Aún hay movimiento, resetear contador
                                             last_motion_time = current_time
+                                            system_status["motion_detected"] = True
                                     except Exception as e:
                                         logger.error(f"Error verificando movimiento: {e}")
                                         # En caso de error, resetear contador para intentar de nuevo
                                         last_motion_time = current_time
+                        else:
+                            # No hay episodio activo y no hay movimiento - asegurar estado calmado
+                            if system_status.get("motion_detected", False):
+                                system_status["motion_detected"] = False
                     
                     # Añadir frame al episodio solo cada 5 frames para reducir memoria
                     if self.episode_active and self.recorder and frame_count % 5 == 0:
