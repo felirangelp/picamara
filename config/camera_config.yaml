@@ -6,12 +6,12 @@ camera:
   format: "RGB888"
 
 detection:
-  motion_threshold: 150  # Muy alto - muy poco sensible para evitar falsos positivos
-  min_area: 8000  # Objetos muy grandes - reduce significativamente falsos positivos
-  blur_kernel: 15  # Blur muy fuerte - reduce ruido al máximo
-  background_update_rate: 0.01  # Actualización muy lenta - fondo muy estable
-  consecutive_frames: 10  # Requiere 10 frames consecutivos (~0.6 segundos) - muy estable
-  calibration_frames: 90  # Calibración inicial de 90 frames (6 segundos) - fondo muy estable
+  motion_threshold: 50  # Balanceado - detecta movimiento real sin ser demasiado sensible
+  min_area: 2000  # Objetos medianos - balance entre detección y falsos positivos
+  blur_kernel: 9  # Blur moderado - reduce ruido sin perder detalle
+  background_update_rate: 0.05  # Actualización moderada - se adapta a cambios de luz
+  consecutive_frames: 3  # Requiere 3 frames consecutivos (~0.2 segundos) - balanceado
+  calibration_frames: 30  # Calibración inicial de 30 frames (2 segundos) - suficiente
   calm_timeout: 2.0  # Segundos sin movimiento antes de volver a "calmado"
 
 storage:
