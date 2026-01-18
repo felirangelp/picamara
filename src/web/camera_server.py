@@ -247,31 +247,31 @@ class CameraServer:
                     frames_without_motion += 1
                 else:
                     frames_without_motion = 0
-                    # Cuando hay movimiento, actualizar tiempo de último movimiento
-                    if self.episode_active:
-                        last_motion_time = current_time
                 
                 # Leer timeout de configuración
                 calm_timeout = det_config.get('calm_timeout', 2.0)
+                max_episode_duration = calm_timeout * 3  # Máximo 3x el timeout (6 segundos por defecto)
                 
-                # CRÍTICO: Forzar estado a False basándose en TIEMPO, no solo en frames
-                # Si hay episodio activo y ha pasado más tiempo del timeout, forzar cierre
+                # CRÍTICO: Forzar estado a False basándose en TIEMPO del EPISODIO, no del detector
+                # Si hay episodio activo y ha pasado más tiempo del máximo, forzar cierre
+                # Esto previene que el episodio quede atrapado si el detector siempre reporta movimiento
                 force_calm = False
                 if self.episode_active:
-                    if last_motion_time is not None:
-                        time_since_last_motion = current_time - last_motion_time
-                        if time_since_last_motion > calm_timeout:
+                    episode_duration = current_time - self.episode_start_time
+                    
+                    # Si el episodio lleva más tiempo del máximo, forzar cierre
+                    if episode_duration > max_episode_duration:
+                        force_calm = True
+                        logger.info(f"Forzando calmado: episodio activo por {episode_duration:.2f}s (máximo: {max_episode_duration}s)")
+                    # También verificar si hay frames sin movimiento Y tiempo suficiente
+                    elif frames_without_motion >= 3:  # ~0.2 segundos
+                        # Si hay frames sin movimiento, verificar tiempo desde inicio del episodio
+                        if episode_duration > calm_timeout:
                             force_calm = True
-                            logger.info(f"Forzando calmado: {time_since_last_motion:.2f}s sin movimiento (timeout: {calm_timeout}s)")
-                    else:
-                        # Si no hay last_motion_time pero hay episodio activo, usar tiempo del episodio
-                        episode_duration = current_time - self.episode_start_time
-                        if episode_duration > calm_timeout * 2:  # Doble del timeout como seguridad
-                            force_calm = True
-                            logger.info(f"Forzando calmado: episodio activo por {episode_duration:.2f}s sin movimiento real")
+                            logger.info(f"Forzando calmado: {frames_without_motion} frames sin movimiento y {episode_duration:.2f}s de episodio")
                 
-                # También forzar si hay muchos frames sin movimiento (backup)
-                if frames_without_motion >= 3:  # ~0.2 segundos
+                # También forzar si hay muchos frames sin movimiento (backup rápido)
+                if frames_without_motion >= 5:  # ~0.3 segundos
                     force_calm = True
                 
                 if force_calm:
@@ -302,8 +302,6 @@ class CameraServer:
                 try:
                     if motion_detected and not force_calm:
                         motion_active_frames += 1
-                        # Resetear contadores de tiempo sin movimiento solo si realmente hay movimiento
-                        last_motion_time = current_time
                         frames_without_motion = 0
                         
                         if not self.episode_active:
@@ -311,7 +309,6 @@ class CameraServer:
                             self.episode_id = self.recorder.start_episode()
                             self.episode_start_time = time.time()
                             self.episode_active = True
-                            last_motion_time = current_time  # Inicializar tiempo de último movimiento
                             
                             # Registrar en BD
                             self.episode_db_id = self.db_manager.add_episode(
@@ -326,19 +323,11 @@ class CameraServer:
                     else:
                         motion_active_frames = 0
                         
-                        if self.episode_active:
-                            # Inicializar contador si es la primera vez sin movimiento
-                            if last_motion_time is None:
-                                last_motion_time = self.episode_start_time
-                            
-                            # La lógica de timeout ya se maneja arriba en force_calm
-                            # Aquí solo mantenemos el estado
-                        else:
-                            # No hay episodio activo y no hay movimiento - asegurar estado calmado
+                        # No hay episodio activo y no hay movimiento - asegurar estado calmado
+                        if not self.episode_active:
                             if system_status.get("motion_detected", False):
                                 system_status["motion_detected"] = False
                                 frames_without_motion = 0
-                                last_motion_time = None
                     
                     # Añadir frame al episodio solo cada 5 frames para reducir memoria
                     if self.episode_active and self.recorder and frame_count % 5 == 0:
