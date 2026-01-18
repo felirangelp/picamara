@@ -189,6 +189,8 @@ class CameraServer:
             last_motion_time: Optional[float] = None  # Tiempo desde que dejó de haber movimiento
             last_motion_detected = False  # Estado anterior de movimiento
             frames_without_motion = 0  # Contador de frames consecutivos sin movimiento
+            last_forced_calm_time: Optional[float] = None  # Tiempo del último calmado forzado
+            calm_grace_period = 2.0  # Período de gracia después de forzar calmado (segundos)
             
             # Loop principal
             while self.is_running:
@@ -284,6 +286,7 @@ class CameraServer:
                         self._close_episode()
                         last_motion_time = None
                         frames_without_motion = 0
+                        last_forced_calm_time = current_time  # Registrar tiempo del calmado forzado
                         # Forzar reset del fondo del detector para que se recalibre
                         # IMPORTANTE: No resetear aquí porque causa errores de OpenCV
                         # El reset se hará automáticamente cuando el detector detecte
@@ -300,7 +303,18 @@ class CameraServer:
                 
                 # Manejar episodios
                 try:
-                    if motion_detected and not force_calm:
+                    # CRÍTICO: Verificar si estamos en período de gracia después de forzar calmado
+                    # Esto previene que se inicie un nuevo episodio inmediatamente después de cerrar uno
+                    in_grace_period = False
+                    if last_forced_calm_time is not None:
+                        time_since_forced_calm = current_time - last_forced_calm_time
+                        if time_since_forced_calm < calm_grace_period:
+                            in_grace_period = True
+                            # Durante el período de gracia, ignorar cualquier movimiento reportado
+                            motion_detected = False
+                            system_status["motion_detected"] = False
+                    
+                    if motion_detected and not force_calm and not in_grace_period:
                         motion_active_frames += 1
                         frames_without_motion = 0
                         
@@ -309,6 +323,7 @@ class CameraServer:
                             self.episode_id = self.recorder.start_episode()
                             self.episode_start_time = time.time()
                             self.episode_active = True
+                            last_forced_calm_time = None  # Resetear período de gracia
                             
                             # Registrar en BD
                             self.episode_db_id = self.db_manager.add_episode(
