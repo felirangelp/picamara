@@ -352,10 +352,9 @@ class CameraServer:
                                 system_status["motion_count"] += 1
                     else:
                         # Si no hay movimiento o estamos en período de gracia, resetear contador
+                        motion_active_frames = 0
                         if not in_grace_period:
                             frames_with_motion_after_grace = 0
-                    else:
-                        motion_active_frames = 0
                         
                         # No hay episodio activo y no hay movimiento - asegurar estado calmado
                         if not self.episode_active:
