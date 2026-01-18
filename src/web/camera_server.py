@@ -327,9 +327,9 @@ class CameraServer:
                             system_status["motion_detected"] = False
                             frames_with_motion_after_grace = 0  # Resetear contador durante gracia
                         else:
-                            # Fuera del período de gracia, resetear contador
+                            # Fuera del período de gracia, NO resetear contador aquí
+                            # El contador se resetea solo si hay varios frames sin movimiento
                             last_forced_calm_time = None
-                            frames_with_motion_after_grace = 0
                     
                     if motion_detected and not force_calm and not in_grace_period:
                         motion_active_frames += 1
