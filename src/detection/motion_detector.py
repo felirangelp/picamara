@@ -35,7 +35,8 @@ class MotionDetector:
         min_area: int = 500,
         blur_kernel: int = 5,
         background_update_rate: float = 0.1,
-        consecutive_frames: int = 1
+        consecutive_frames: int = 1,
+        calibration_frames: int = 30
     ) -> None:
         """Inicializa el detector de movimiento.
         
@@ -46,6 +47,7 @@ class MotionDetector:
             background_update_rate: Tasa de actualización del fondo (0-1).
                 Valores más altos = fondo se actualiza más rápido.
             consecutive_frames: Número de frames consecutivos con movimiento requeridos.
+            calibration_frames: Número de frames para calibración inicial del fondo.
         """
         if blur_kernel % 2 == 0:
             blur_kernel += 1  # Asegurar que sea impar
@@ -56,14 +58,17 @@ class MotionDetector:
         self.blur_kernel: int = blur_kernel
         self.background_update_rate: float = background_update_rate
         self.consecutive_frames: int = consecutive_frames
+        self.calibration_frames: int = calibration_frames
         self.background: Optional[np.ndarray] = None
         self.background_set: bool = False
         self.motion_frame_count: int = 0  # Contador de frames consecutivos con movimiento
+        self.calibration_count: int = 0  # Contador de frames de calibración
         
         logger.info(
             f"MotionDetector inicializado: threshold={threshold}, "
             f"min_area={min_area}, blur_kernel={blur_kernel}, "
-            f"consecutive_frames={consecutive_frames}"
+            f"consecutive_frames={consecutive_frames}, "
+            f"calibration_frames={calibration_frames}"
         )
     
     def set_background(self, frame: np.ndarray) -> None:
@@ -142,10 +147,45 @@ class MotionDetector:
         if frame is None or frame.size == 0:
             raise ValueError("Frame inválido para detección")
         
-        # Si el fondo no está establecido, establecerlo y retornar sin movimiento
+        # Período de calibración: acumular frames para establecer fondo estable
         if not self.background_set:
-            self.set_background(frame)
-            return False, frame.copy()
+            self.calibration_count += 1
+            if self.calibration_count < self.calibration_frames:
+                # Durante calibración, actualizar fondo con todos los frames
+                if self.background is None:
+                    # Convertir a escala de grises
+                    if len(frame.shape) == 3:
+                        gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+                    else:
+                        gray = frame.copy()
+                    # Aplicar blur
+                    self.background = cv2.GaussianBlur(
+                        gray,
+                        (self.blur_kernel, self.blur_kernel),
+                        0
+                    )
+                else:
+                    # Promediar con frames anteriores durante calibración
+                    if len(frame.shape) == 3:
+                        gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+                    else:
+                        gray = frame.copy()
+                    gray_blurred = cv2.GaussianBlur(
+                        gray,
+                        (self.blur_kernel, self.blur_kernel),
+                        0
+                    )
+                    # Promedio móvil durante calibración
+                    alpha = 1.0 / (self.calibration_count + 1)
+                    self.background = (
+                        (1 - alpha) * self.background +
+                        alpha * gray_blurred
+                    ).astype(np.uint8)
+                return False, frame.copy()
+            else:
+                # Calibración completa
+                self.background_set = True
+                logger.info(f"Calibración completada después de {self.calibration_count} frames")
         
         # Convertir a escala de grises
         if len(frame.shape) == 3:
@@ -226,7 +266,10 @@ class MotionDetector:
         
         # Actualizar fondo adaptativamente (solo si no hay movimiento)
         # para evitar que el objeto en movimiento se convierta en fondo
+        # Solo actualizar si no hay movimiento detectado Y han pasado varios frames sin movimiento
         if not motion_detected:
+            # Actualizar fondo más agresivamente cuando no hay movimiento
+            # para adaptarse a cambios de iluminación lentos
             self.update_background(frame)
         
         return motion_detected, annotated_frame

@@ -6,11 +6,12 @@ camera:
   format: "RGB888"
 
 detection:
-  motion_threshold: 120  # Muy alto - solo cambios significativos
-  min_area: 5000  # Solo objetos muy grandes
-  blur_kernel: 11  # Blur muy fuerte para reducir ruido
-  background_update_rate: 0.01  # Extremadamente lento
-  consecutive_frames: 5  # Requiere 5 frames consecutivos (más estable)
+  motion_threshold: 180  # EXTREMADAMENTE ALTO - solo cambios muy significativos
+  min_area: 10000  # Solo objetos EXTREMADAMENTE grandes
+  blur_kernel: 15  # Blur extremadamente fuerte
+  background_update_rate: 0.005  # Casi no actualiza el fondo
+  consecutive_frames: 10  # Requiere 10 frames consecutivos (~0.6 segundos)
+  calibration_frames: 60  # Calibración inicial de 60 frames (4 segundos)
 
 storage:
   save_path: "./data/videos"

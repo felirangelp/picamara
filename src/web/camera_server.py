@@ -155,7 +155,8 @@ class CameraServer:
                 min_area=det_config.get('min_area', 500),
                 blur_kernel=det_config.get('blur_kernel', 5),
                 background_update_rate=det_config.get('background_update_rate', 0.1),
-                consecutive_frames=det_config.get('consecutive_frames', 1)
+                consecutive_frames=det_config.get('consecutive_frames', 1),
+                calibration_frames=det_config.get('calibration_frames', 30)
             )
             
             # Base de datos
