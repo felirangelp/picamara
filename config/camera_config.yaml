@@ -9,9 +9,10 @@ detection:
   motion_threshold: 100  # Medio-alto - balance entre sensibilidad y estabilidad
   min_area: 3000  # Objetos medianos-grandes (balance)
   blur_kernel: 9  # Blur moderado-fuerte
-  background_update_rate: 0.02  # Actualización lenta pero razonable
+  background_update_rate: 0.03  # Actualización moderada (aumentada para volver a calmado más rápido)
   consecutive_frames: 3  # Requiere 3 frames consecutivos (~0.2 segundos)
   calibration_frames: 30  # Calibración inicial de 30 frames (2 segundos)
+  calm_timeout: 2.0  # Segundos sin movimiento antes de volver a "calmado"
 
 storage:
   save_path: "./data/videos"
