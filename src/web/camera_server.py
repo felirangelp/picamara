@@ -245,11 +245,18 @@ class CameraServer:
                 # Forzar estado a False si hay muchos frames consecutivos sin movimiento
                 # Esto previene que falsos positivos ocasionales mantengan el estado en True
                 if frames_without_motion >= 10:  # ~0.6 segundos a 15 FPS
+                    # Forzar estado a False y mantenerlo así
                     motion_detected = False
                     system_status["motion_detected"] = False
-                
-                # Actualizar estado del sistema
-                system_status["motion_detected"] = motion_detected
+                    # Si hay episodio activo, forzar cierre también
+                    if self.episode_active:
+                        # Cerrar episodio inmediatamente si hay muchos frames sin movimiento
+                        self._close_episode()
+                        last_motion_time = None
+                        frames_without_motion = 0
+                else:
+                    # Actualizar estado del sistema solo si no estamos forzando a False
+                    system_status["motion_detected"] = motion_detected
                 
                 # Manejar episodios
                 try:
@@ -406,8 +413,15 @@ class CameraServer:
             self.episode_id = None
             self.episode_db_id = None
             self.episode_start_time = None
+            
+            # Asegurar que el estado se actualice a False INMEDIATAMENTE
+            system_status["motion_detected"] = False
+            
+            logger.info(f"Episodio cerrado, estado actualizado a calmado")
         except Exception as e:
             logger.error(f"Error cerrando episodio: {e}", exc_info=True)
+            # Asegurar estado incluso si hay error
+            system_status["motion_detected"] = False
     
     def start(self) -> None:
         """Inicia el servidor."""
