@@ -245,9 +245,10 @@ class CameraServer:
                     frames_without_motion = 0
                 
                 # Forzar estado a False si hay muchos frames consecutivos sin movimiento
-                # Reducido a 5 frames (~0.3 segundos) para respuesta más rápida
-                if frames_without_motion >= 5:  # ~0.3 segundos a 15 FPS (cada 2 frames = ~7.5 FPS efectivo)
-                    # Forzar estado a False y mantenerlo así
+                # Reducido a 3 frames (~0.2 segundos) para respuesta más rápida
+                # CRÍTICO: Ignorar lo que dice el detector si hay muchos frames sin movimiento
+                if frames_without_motion >= 3:  # ~0.2 segundos a 15 FPS (cada 2 frames = ~7.5 FPS efectivo)
+                    # Forzar estado a False y mantenerlo así, IGNORANDO lo que dice el detector
                     motion_detected = False
                     system_status["motion_detected"] = False
                     # Si hay episodio activo, forzar cierre también
@@ -256,13 +257,19 @@ class CameraServer:
                         self._close_episode()
                         last_motion_time = None
                         frames_without_motion = 0
+                        # Forzar reset del fondo del detector para que se recalibre
+                        try:
+                            self.detector.reset_background()
+                            logger.info("Fondo del detector reseteado forzadamente")
+                        except Exception as e:
+                            logger.error(f"Error reseteando fondo: {e}")
                 else:
                     # Actualizar estado del sistema solo si no estamos forzando a False
                     # Pero solo actualizar si realmente procesamos el frame
                     if frame_count % 2 == 0:
                         system_status["motion_detected"] = motion_detected
                     # Si no procesamos el frame y hay muchos sin movimiento, forzar False
-                    elif frames_without_motion >= 3:
+                    elif frames_without_motion >= 2:
                         system_status["motion_detected"] = False
                 
                 # Manejar episodios

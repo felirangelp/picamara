@@ -264,15 +264,24 @@ class MotionDetector:
             self.motion_frame_count = 0
             motion_detected = False
         
-        # Actualizar fondo adaptativamente (solo si no hay movimiento)
-        # para evitar que el objeto en movimiento se convierta en fondo
+        # Actualizar fondo adaptativamente SIEMPRE, pero más rápido cuando no hay movimiento
+        # Esto previene que el fondo quede "atrapado" en un estado que siempre detecta movimiento
         if not motion_detected:
             # Actualizar fondo más agresivamente cuando no hay movimiento
             # para adaptarse rápidamente a cambios de iluminación y volver a "calmado"
-            # Usar tasa de actualización más alta cuando no hay movimiento
             original_rate = self.background_update_rate
             # Aumentar temporalmente la tasa de actualización para adaptación rápida
             self.background_update_rate = min(0.1, original_rate * 2.5)  # Hasta 0.1 máximo
+            self.update_background(frame)
+            # Restaurar tasa original
+            self.background_update_rate = original_rate
+        else:
+            # CRÍTICO: Actualizar fondo incluso cuando hay movimiento, pero muy lentamente
+            # Esto previene que el fondo quede "atrapado" y siempre detecte movimiento
+            # Usar una tasa muy baja para que el objeto en movimiento no se convierta en fondo
+            original_rate = self.background_update_rate
+            # Actualizar muy lentamente (10% de la tasa normal) cuando hay movimiento
+            self.background_update_rate = original_rate * 0.1
             self.update_background(frame)
             # Restaurar tasa original
             self.background_update_rate = original_rate
