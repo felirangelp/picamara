@@ -267,10 +267,13 @@ class CameraServer:
                             if last_motion_time is None:
                                 last_motion_time = current_time
                             
-                            # Esperar 2 segundos SIN movimiento antes de verificar cierre
+                            # Leer timeout de configuración (default 2 segundos)
+                            calm_timeout = det_config.get('calm_timeout', 2.0)
+                            
+                            # Esperar tiempo configurado SIN movimiento antes de verificar cierre
                             time_without_motion = current_time - last_motion_time
                             
-                            if time_without_motion > 2.0:  # 2 segundos sin movimiento
+                            if time_without_motion > calm_timeout:
                                 # Verificar una vez más que realmente no hay movimiento
                                 check_frame = self.camera.capture_frame()
                                 if check_frame is not None:
