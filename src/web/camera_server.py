@@ -314,33 +314,20 @@ class CameraServer:
                             time_without_motion = current_time - last_motion_time
                             
                             if time_without_motion > calm_timeout:
-                                # Verificar una vez más que realmente no hay movimiento
-                                check_frame = self.camera.capture_frame()
-                                if check_frame is not None:
-                                    try:
-                                        # Reducir frame para verificación rápida
-                                        if check_frame.shape[0] > 720:
-                                            check_small = cv2.resize(check_frame, (640, 360))
-                                            check_motion, _ = self.detector.detect(check_small)
-                                        else:
-                                            check_motion, _ = self.detector.detect(check_frame)
-                                        
-                                        if not check_motion:
-                                            # No hay movimiento confirmado, cerrar episodio
-                                            self._close_episode()
-                                            last_motion_time = None  # Resetear contador
-                                            frames_without_motion = 0
-                                            # Asegurar que el estado se actualice a False
-                                            system_status["motion_detected"] = False
-                                        else:
-                                            # Aún hay movimiento, resetear contador
-                                            last_motion_time = current_time
-                                            frames_without_motion = 0
-                                            system_status["motion_detected"] = True
-                                    except Exception as e:
-                                        logger.error(f"Error verificando movimiento: {e}")
-                                        # En caso de error, resetear contador para intentar de nuevo
-                                        last_motion_time = current_time
+                                # CRÍTICO: Después del timeout, forzar cierre del episodio
+                                # No confiar en el detector si ya pasó el timeout
+                                logger.info(f"Timeout de calmado alcanzado ({calm_timeout}s), forzando cierre de episodio")
+                                self._close_episode()
+                                last_motion_time = None  # Resetear contador
+                                frames_without_motion = 0
+                                # Asegurar que el estado se actualice a False
+                                system_status["motion_detected"] = False
+                                # Forzar reset del fondo del detector para recalibración
+                                try:
+                                    self.detector.reset_background()
+                                    logger.info("Fondo del detector reseteado después de timeout")
+                                except Exception as e:
+                                    logger.error(f"Error reseteando fondo: {e}")
                         else:
                             # No hay episodio activo y no hay movimiento - asegurar estado calmado
                             if system_status.get("motion_detected", False):
