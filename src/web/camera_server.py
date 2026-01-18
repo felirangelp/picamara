@@ -190,7 +190,7 @@ class CameraServer:
             last_motion_detected = False  # Estado anterior de movimiento
             frames_without_motion = 0  # Contador de frames consecutivos sin movimiento
             last_forced_calm_time: Optional[float] = None  # Tiempo del último calmado forzado
-            calm_grace_period = 5.0  # Período de gracia después de forzar calmado (segundos) - aumentado para estabilidad
+            calm_grace_period = 8.0  # Período de gracia después de forzar calmado (segundos) - aumentado para máxima estabilidad
             frames_with_motion_after_grace = 0  # Contador de frames con movimiento después del período de gracia
             
             # Loop principal
@@ -327,7 +327,7 @@ class CameraServer:
                         
                         # CRÍTICO: Requerir múltiples frames con movimiento después del período de gracia
                         # para evitar falsos positivos que inicien episodios inmediatamente
-                        frames_required_after_grace = 10  # ~0.6 segundos a 15 FPS
+                        frames_required_after_grace = 20  # ~1.3 segundos a 15 FPS - muy estricto
                         
                         if not self.episode_active:
                             # Solo iniciar episodio si hay suficientes frames consecutivos con movimiento
