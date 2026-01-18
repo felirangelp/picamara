@@ -368,11 +368,18 @@ class CameraServer:
     def _close_episode(self) -> None:
         """Cierra el episodio actual."""
         if not self.episode_active or not self.recorder:
+            # Asegurar estado calmado incluso si no hay episodio activo
+            system_status["motion_detected"] = False
             return
         
         try:
+            # Guardar referencias antes de resetear
+            episode_id = self.episode_id
+            episode_db_id = self.episode_db_id
+            episode_start = self.episode_start_time
+            
             end_time = time.time()
-            duration = end_time - self.episode_start_time if self.episode_start_time else 0
+            duration = end_time - episode_start if episode_start else 0
             
             # Guardar episodio
             episode_path = self.recorder.save_episode()
