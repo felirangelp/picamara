@@ -314,28 +314,46 @@ class CameraServer:
                             # Durante el período de gracia, ignorar cualquier movimiento reportado
                             motion_detected = False
                             system_status["motion_detected"] = False
+                            frames_with_motion_after_grace = 0  # Resetear contador durante gracia
+                        else:
+                            # Fuera del período de gracia, resetear contador
+                            last_forced_calm_time = None
+                            frames_with_motion_after_grace = 0
                     
                     if motion_detected and not force_calm and not in_grace_period:
                         motion_active_frames += 1
                         frames_without_motion = 0
+                        frames_with_motion_after_grace += 1
+                        
+                        # CRÍTICO: Requerir múltiples frames con movimiento después del período de gracia
+                        # para evitar falsos positivos que inicien episodios inmediatamente
+                        frames_required_after_grace = 10  # ~0.6 segundos a 15 FPS
                         
                         if not self.episode_active:
-                            # Iniciar nuevo episodio
-                            self.episode_id = self.recorder.start_episode()
-                            self.episode_start_time = time.time()
-                            self.episode_active = True
-                            last_forced_calm_time = None  # Resetear período de gracia
-                            
-                            # Registrar en BD
-                            self.episode_db_id = self.db_manager.add_episode(
-                                episode_id=self.episode_id,
-                                file_path=f"{self.recorder.episode_path}/{self.episode_id}",
-                                start_time=datetime.fromtimestamp(self.episode_start_time),
-                                motion_detected=True
-                            )
-                            
-                            self.notifier.episode_started(self.episode_id, self.episode_db_id)
-                            system_status["motion_count"] += 1
+                            # Solo iniciar episodio si hay suficientes frames consecutivos con movimiento
+                            # Esto previene que falsos positivos ocasionales inicien episodios
+                            if frames_with_motion_after_grace >= frames_required_after_grace:
+                                # Iniciar nuevo episodio
+                                self.episode_id = self.recorder.start_episode()
+                                self.episode_start_time = time.time()
+                                self.episode_active = True
+                                last_forced_calm_time = None  # Resetear período de gracia
+                                frames_with_motion_after_grace = 0
+                                
+                                # Registrar en BD
+                                self.episode_db_id = self.db_manager.add_episode(
+                                    episode_id=self.episode_id,
+                                    file_path=f"{self.recorder.episode_path}/{self.episode_id}",
+                                    start_time=datetime.fromtimestamp(self.episode_start_time),
+                                    motion_detected=True
+                                )
+                                
+                                self.notifier.episode_started(self.episode_id, self.episode_db_id)
+                                system_status["motion_count"] += 1
+                    else:
+                        # Si no hay movimiento o estamos en período de gracia, resetear contador
+                        if not in_grace_period:
+                            frames_with_motion_after_grace = 0
                     else:
                         motion_active_frames = 0
                         
