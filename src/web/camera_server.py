@@ -225,16 +225,18 @@ class CameraServer:
                             self.current_frame = frame
                         motion_detected = False
                 else:
-                    # Frame sin procesar - usar estado anterior
-                    motion_detected = last_motion_detected
+                    # Frame sin procesar - asumir NO movimiento para incrementar contador
+                    # Esto ayuda a que el contador se incremente más rápido
+                    motion_detected = False
                     # Frame sin procesar - solo actualizar para mantener fluidez
                     with self.frame_lock:
                         self.current_frame = frame
                     time.sleep(0.05)  # Sleep para reducir CPU
                     # NO hacer continue aquí - necesitamos procesar la lógica de episodios
                 
-                # Guardar estado actual para siguiente iteración
-                last_motion_detected = motion_detected
+                # Guardar estado actual para siguiente iteración (solo cuando procesamos)
+                if frame_count % 2 == 0:
+                    last_motion_detected = motion_detected
                 
                 # Contar frames consecutivos sin movimiento
                 if not motion_detected:
@@ -243,8 +245,8 @@ class CameraServer:
                     frames_without_motion = 0
                 
                 # Forzar estado a False si hay muchos frames consecutivos sin movimiento
-                # Esto previene que falsos positivos ocasionales mantengan el estado en True
-                if frames_without_motion >= 10:  # ~0.6 segundos a 15 FPS
+                # Reducido a 5 frames (~0.3 segundos) para respuesta más rápida
+                if frames_without_motion >= 5:  # ~0.3 segundos a 15 FPS (cada 2 frames = ~7.5 FPS efectivo)
                     # Forzar estado a False y mantenerlo así
                     motion_detected = False
                     system_status["motion_detected"] = False
@@ -256,7 +258,12 @@ class CameraServer:
                         frames_without_motion = 0
                 else:
                     # Actualizar estado del sistema solo si no estamos forzando a False
-                    system_status["motion_detected"] = motion_detected
+                    # Pero solo actualizar si realmente procesamos el frame
+                    if frame_count % 2 == 0:
+                        system_status["motion_detected"] = motion_detected
+                    # Si no procesamos el frame y hay muchos sin movimiento, forzar False
+                    elif frames_without_motion >= 3:
+                        system_status["motion_detected"] = False
                 
                 # Manejar episodios
                 try:
