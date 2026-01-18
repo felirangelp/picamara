@@ -6,7 +6,7 @@ set USER [lindex $argv 1]
 set PASS [lindex $argv 2]
 set LOCAL_PATH [lindex $argv 3]
 
-if {$IP == ""} { set IP "192.168.0.105" }
+if {$IP == ""} { set IP "picamara.local" }
 if {$USER == ""} { set USER "picamara" }
 if {$PASS == ""} { set PASS "picamara" }
 if {$LOCAL_PATH == ""} { 

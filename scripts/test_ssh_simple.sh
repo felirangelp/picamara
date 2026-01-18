@@ -1,7 +1,7 @@
 #!/bin/bash
 # Prueba simple de SSH con contraseña usando expect
 
-IP=${1:-192.168.0.105}
+IP=${1:-picamara.local}
 USER=${2:-picamara}
 PASS=${3:-picamara}
 

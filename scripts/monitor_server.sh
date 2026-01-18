@@ -1,7 +1,7 @@
 #!/bin/bash
 # Script de monitoreo para mantener el servidor corriendo
 
-IP="${1:-192.168.1.50}"
+IP="${1:-picamara.local}"
 USER="${2:-picamara}"
 PASS="${3:-picamara}"
 

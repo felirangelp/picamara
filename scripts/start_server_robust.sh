@@ -6,7 +6,7 @@ set USER [lindex $argv 1]
 set PASS [lindex $argv 2]
 set timeout 30
 
-if {$IP == ""} { set IP "192.168.1.50" }
+if {$IP == ""} { set IP "picamara.local" }
 if {$USER == ""} { set USER "picamara" }
 if {$PASS == ""} { set PASS "picamara" }
 
