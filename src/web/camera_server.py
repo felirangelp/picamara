@@ -338,7 +338,8 @@ class CameraServer:
                         
                         # CRÍTICO: Requerir múltiples frames con movimiento después del período de gracia
                         # para evitar falsos positivos que inicien episodios inmediatamente
-                        frames_required_after_grace = 20  # ~1.3 segundos a 15 FPS - muy estricto
+                        # Reducido a 10 frames (~0.6 segundos) para permitir detección más rápida
+                        frames_required_after_grace = 10  # ~0.6 segundos a 15 FPS - balanceado
                         
                         if not self.episode_active:
                             # Solo iniciar episodio si hay suficientes frames consecutivos con movimiento
@@ -365,10 +366,14 @@ class CameraServer:
                         # Si no hay movimiento o estamos en período de gracia
                         motion_active_frames = 0
                         if not in_grace_period:
-                            # Solo resetear contador si no hay episodio activo
-                            # Si hay episodio activo, mantener el contador para no perder progreso
+                            # CRÍTICO: Solo resetear contador si hay varios frames consecutivos sin movimiento
+                            # Esto permite que el detector acumule frames incluso si hay movimiento intermitente
+                            # Solo resetear si hay 5+ frames consecutivos sin movimiento (tolerancia a ruido)
                             if not self.episode_active:
-                                frames_with_motion_after_grace = 0
+                                if frames_without_motion >= 5:  # ~0.3 segundos sin movimiento
+                                    frames_with_motion_after_grace = 0
+                                # Si hay menos de 5 frames sin movimiento, mantener el contador
+                                # Esto permite que el movimiento intermitente se acumule
                         
                         # No hay episodio activo y no hay movimiento - asegurar estado calmado
                         if not self.episode_active:
